@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_castle/views/home/home_screen.dart';
 import 'package:smart_castle/views/learn/learn_screen.dart';
+import 'package:smart_castle/views/words/deck_detail_screen.dart';
 import 'package:smart_castle/views/words/words_screen.dart';
 import 'package:smart_castle/views/profile/profile_screen.dart';
 import 'package:smart_castle/views/flashcards/flashcards_screen.dart';
@@ -41,6 +42,15 @@ final appRouter = GoRouter(
         ]),
       ],
     ),
+    GoRoute(
+      path: '/deck/:deckId',
+      builder: (context, state) {
+        final deckId = state.pathParameters['deckId']!;
+        final extra = state.extra as Map<String, dynamic>;
+        return DeckDetailScreen(deckId: deckId, deck: extra);
+      },
+    ),
+
 
     GoRoute(
       path: '/flashcards/:deckId',
