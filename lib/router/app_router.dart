@@ -7,39 +7,46 @@ import 'package:smart_castle/views/words/words_screen.dart';
 import 'package:smart_castle/views/profile/profile_screen.dart';
 import 'package:smart_castle/views/flashcards/flashcards_screen.dart';
 import 'package:smart_castle/views/game/game_screen.dart';
+import 'package:smart_castle/views/auth/login_screen.dart';
+import 'package:smart_castle/views/auth/register_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/login',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) {
         return ScaffoldWithNavBar(shell: shell);
       },
       branches: [
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const HomeScreen(),
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/learn',
-            builder: (context, state) => const LearnScreen(),
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/words',
-            builder: (context, state) => const WordsScreen(),
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/profile',
-            builder: (context, state) => const ProfileScreen(),
-          ),
-        ]),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/learn',
+              builder: (context, state) => const LearnScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/words',
+              builder: (context, state) => const WordsScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
+            ),
+          ],
+        ),
       ],
     ),
     GoRoute(
@@ -50,7 +57,6 @@ final appRouter = GoRouter(
         return DeckDetailScreen(deckId: deckId, deck: extra);
       },
     ),
-
 
     GoRoute(
       path: '/flashcards/:deckId',
@@ -65,6 +71,11 @@ final appRouter = GoRouter(
         final deckId = state.pathParameters['deckId']!;
         return GameScreen(deckId: deckId);
       },
+    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
     ),
   ],
 );
