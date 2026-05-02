@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,6 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
 
-
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
@@ -67,9 +66,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
 
-
                 const SizedBox(height: 20),
-
 
                 _SettingsItem(
                   icon: Icons.notifications_outlined,
@@ -92,12 +89,13 @@ class ProfileScreen extends StatelessWidget {
                   onTap: () {},
                 ),
 
-
                 const SizedBox(height: 12),
 
-
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    if (context.mounted) context.go('/login');
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade400,
                     foregroundColor: Colors.white,
@@ -106,10 +104,7 @@ class ProfileScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Log out',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: const Text('Log out', style: TextStyle(fontSize: 16)),
                 ),
               ],
             ),
@@ -120,12 +115,10 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-
 class _StatItem extends StatelessWidget {
   final String value;
   final String label;
   const _StatItem({required this.value, required this.label});
-
 
   @override
   Widget build(BuildContext context) {
@@ -140,28 +133,22 @@ class _StatItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }
 }
-
 
 class _SettingsItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
 
-
   const _SettingsItem({
     required this.icon,
     required this.title,
     required this.onTap,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +161,11 @@ class _SettingsItem extends StatelessWidget {
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFF5B4DB0)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey,
+        ),
         onTap: onTap,
       ),
     );

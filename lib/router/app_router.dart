@@ -9,9 +9,20 @@ import 'package:smart_castle/views/flashcards/flashcards_screen.dart';
 import 'package:smart_castle/views/game/game_screen.dart';
 import 'package:smart_castle/views/auth/login_screen.dart';
 import 'package:smart_castle/views/auth/register_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
+  
+  redirect: (context, state) {
+  final session = Supabase.instance.client.auth.currentSession;
+  final isAuthRoute = state.matchedLocation == '/login' ||
+                      state.matchedLocation == '/register';
+  if (session == null && !isAuthRoute) return '/login';
+  if (session != null && isAuthRoute) return '/';
+  return null;
+},
+
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) {
