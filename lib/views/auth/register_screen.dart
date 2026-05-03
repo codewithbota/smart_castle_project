@@ -21,7 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _emailController.text.isEmpty ||
       _passwordController.text.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Заполните все поля')),
+      const SnackBar(content: Text('Fill all the forms')),
     );
     return;
   }
@@ -36,7 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   } catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: ${e.toString()}')),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   } finally {

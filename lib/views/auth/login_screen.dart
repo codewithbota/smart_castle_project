@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
   if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Заполните все поля')),
+      const SnackBar(content: Text('Fill all the forms ')),
     );
     return;
   }
@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   } catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: ${e.toString()}')),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   } finally {

@@ -1,47 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smart_castle/cubits/deck_cubit.dart';
+import 'package:smart_castle/repositories/deck_repository.dart';
 
-
-class WordsScreen extends StatefulWidget {
+class WordsScreen extends StatelessWidget {
   const WordsScreen({super.key});
 
-
   @override
-  State<WordsScreen> createState() => _WordsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => DeckCubit(DeckRepository())..loadDecks(),
+      child: const _WordsBody(),
+    );
+  }
 }
 
+class _WordsBody extends StatefulWidget {
+  const _WordsBody();
 
-class _WordsScreenState extends State<WordsScreen> {
-  final List<Map<String, dynamic>> decks = [
-    {
-      'id': '1',
-      'name': 'English',
-      'color': const Color(0xFF3D3A8C),
-      'words': [
-        {'word': 'substantial', 'translation': 'существенный'},
-        {'word': 'ambiguous', 'translation': 'неоднозначный'},
-      ],
-    },
-    {
-      'id': '2',
-      'name': 'Japanese',
-      'color': const Color(0xFFD45C8A),
-      'words': [
-        {'word': '食べる', 'translation': 'есть, кушать'},
-      ],
-    },
-    {
-      'id': '3',
-      'name': 'German',
-      'color': const Color(0xFF2E7D5E),
-      'words': [],
-    },
-  ];
+  @override
+  State<_WordsBody> createState() => _WordsBodyState();
+}
 
-
+class _WordsBodyState extends State<_WordsBody> {
   void _showAddDeckDialog() {
     final nameController = TextEditingController();
-
 
     showDialog(
       context: context,
@@ -56,7 +40,7 @@ class _WordsScreenState extends State<WordsScreen> {
           controller: nameController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: 'Titile (English, Japanese...)',
+            hintText: 'Title (English, Japanese...)',
             hintStyle: const TextStyle(color: Colors.white38),
             filled: true,
             fillColor: Colors.white12,
@@ -74,14 +58,10 @@ class _WordsScreenState extends State<WordsScreen> {
           ElevatedButton(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
-                setState(() {
-                  decks.add({
-                    'id': DateTime.now().toString(),
-                    'name': nameController.text,
-                    'color': const Color(0xFF7C6FCD),
-                    'words': [],
-                  });
-                });
+                context.read<DeckCubit>().createDeck(
+                  nameController.text,
+                  '📚',
+                );
                 Navigator.pop(context);
               }
             },
@@ -95,8 +75,7 @@ class _WordsScreenState extends State<WordsScreen> {
     );
   }
 
-
-  void _deleteDeck(int index) {
+  void _deleteDeck(String deckId) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -106,10 +85,6 @@ class _WordsScreenState extends State<WordsScreen> {
           'Delete category?',
           style: TextStyle(color: Colors.white),
         ),
-        content: Text(
-          'All words in "${decks[index]['name']}" will be deleted',
-          style: const TextStyle(color: Colors.white70),
-        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -117,7 +92,7 @@ class _WordsScreenState extends State<WordsScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() => decks.removeAt(index));
+              context.read<DeckCubit>().deleteDeck(deckId);
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -127,7 +102,6 @@ class _WordsScreenState extends State<WordsScreen> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -154,59 +128,98 @@ class _WordsScreenState extends State<WordsScreen> {
               ),
             ),
           ),
-          Expanded(
-            child: decks.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No categories. Create one!',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: decks.length,
-                    itemBuilder: (context, index) {
-                      final deck = decks[index];
-                      return GestureDetector(
-                        onTap: () => context.push('/deck/${deck['id']}', extra: deck),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: deck['color'],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    deck['name'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${deck['words'].length} words',
-                                    style: const TextStyle(color: Colors.white70),
-                                  ),
-                                ],
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.white70),
-                                onPressed: () => _deleteDeck(index),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+          BlocBuilder<DeckCubit, DeckState>(
+            builder: (context, state) {
+              if (state is DeckLoading) {
+                return const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF5B4DB0)),
                   ),
+                );
+              }
+              if (state is DeckError) {
+                return Expanded(
+                  child: Center(child: Text(state.message)),
+                );
+              }
+              if (state is DeckLoaded) {
+                final decks = state.decks;
+                final colors = [
+                  const Color(0xFF3D3A8C),
+                  const Color(0xFFD45C8A),
+                  const Color(0xFF2E7D5E),
+                  const Color(0xFF7C6FCD),
+                ];
+                return Expanded(
+                  child: decks.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No categories. Create first!',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: decks.length,
+                          itemBuilder: (context, index) {
+                            final deck = decks[index];
+                            final color = colors[index % colors.length];
+                            return GestureDetector(
+                              onTap: () => context.push(
+                                '/deck/${deck.id}',
+                                extra: {
+                                  'name': deck.name,
+                                  'color': color,
+                                },
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          deck.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${deck.wordCount} words',
+                                          style: const TextStyle(
+                                              color: Colors.white70),
+                                        ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.white70,
+                                      ),
+                                      onPressed: () => _deleteDeck(deck.id),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                );
+              }
+              return const Expanded(child: SizedBox());
+            },
           ),
         ],
       ),
@@ -214,10 +227,7 @@ class _WordsScreenState extends State<WordsScreen> {
         onPressed: _showAddDeckDialog,
         backgroundColor: const Color(0xFF5B4DB0),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'New category',
-          style: TextStyle(color: Colors.white),
-        ),
+        label: const Text('New category', style: TextStyle(color: Colors.white)),
       ),
     );
   }

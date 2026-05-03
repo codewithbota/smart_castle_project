@@ -1,38 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:smart_castle/cubits/word_cubit.dart';
+import 'package:smart_castle/repositories/word_repository.dart';
+import 'package:smart_castle/models/word.dart';
 
-
-class DeckDetailScreen extends StatefulWidget {
+class DeckDetailScreen extends StatelessWidget {
   final String deckId;
   final Map<String, dynamic> deck;
 
-
-  const DeckDetailScreen({super.key, required this.deckId, required this.deck});
-
-
-  @override
-  State<DeckDetailScreen> createState() => _DeckDetailScreenState();
-}
-
-
-class _DeckDetailScreenState extends State<DeckDetailScreen> {
-  late List<Map<String, String>> words;
-
+  const DeckDetailScreen({
+    super.key,
+    required this.deckId,
+    required this.deck,
+  });
 
   @override
-  void initState() {
-    super.initState();
-    words = List<Map<String, String>>.from(
-      widget.deck['words'].map((w) => Map<String, String>.from(w)),
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => WordCubit(WordRepository())..loadWords(deckId),
+      child: _DeckDetailBody(deckId: deckId, deck: deck),
     );
   }
+}
 
+class _DeckDetailBody extends StatefulWidget {
+  final String deckId;
+  final Map<String, dynamic> deck;
 
+  const _DeckDetailBody({required this.deckId, required this.deck});
+
+  @override
+  State<_DeckDetailBody> createState() => _DeckDetailBodyState();
+}
+
+class _DeckDetailBodyState extends State<_DeckDetailBody> {
   void _showAddWordDialog() {
     final wordController = TextEditingController();
     final translationController = TextEditingController();
     final transcriptionController = TextEditingController();
     final exampleController = TextEditingController();
-
 
     showDialog(
       context: context,
@@ -40,7 +46,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         backgroundColor: const Color(0xFF2a2a3e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Add a word',
+          'Add word',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
@@ -51,99 +57,50 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               const SizedBox(height: 10),
               _buildTextField(translationController, 'Translation'),
               const SizedBox(height: 10),
-              _buildTextField(
-                transcriptionController,
-                'Transcription (optional)',
-              ),
+              _buildTextField(transcriptionController, 'Transcription (optional)'),
               const SizedBox(height: 10),
-              _buildTextField(
-                exampleController,
-                'Example sentence (optional)',
-              ),
+              _buildTextField(exampleController, 'Example sentence (optional)'),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white54),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () {
               if (wordController.text.isNotEmpty &&
                   translationController.text.isNotEmpty) {
-                setState(() {
-                  words.add({
-                    'word': wordController.text,
-                    'translation': translationController.text,
-                    'transcription': transcriptionController.text,
-                    'example': exampleController.text,
-                  });
-                });
+                context.read<WordCubit>().addWord(
+                  deckId: widget.deckId,
+                  word: wordController.text,
+                  translation: translationController.text,
+                  transcription: transcriptionController.text.isEmpty
+                      ? null
+                      : transcriptionController.text,
+                  example: exampleController.text.isEmpty
+                      ? null
+                      : exampleController.text,
+                );
                 Navigator.pop(context);
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7C6FCD),
             ),
-            child: const Text(
-              'Add',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-
-  void _deleteWord(int index) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF2a2a3e),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Delete word?',
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() => words.removeAt(index));
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  void _editWord(int index) {
-    final wordController = TextEditingController(text: words[index]['word']);
-    final translationController = TextEditingController(
-      text: words[index]['translation'],
-    );
-    final transcriptionController = TextEditingController(
-      text: words[index]['transcription'],
-    );
-    final exampleController = TextEditingController(
-      text: words[index]['example'],
-    );
-
+  void _showEditWordDialog(Word word) {
+    final wordController = TextEditingController(text: word.word);
+    final translationController = TextEditingController(text: word.translation);
+    final transcriptionController = TextEditingController(text: word.transcription ?? '');
+    final exampleController = TextEditingController(text: word.example ?? '');
 
     showDialog(
       context: context,
@@ -151,7 +108,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         backgroundColor: const Color(0xFF2a2a3e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Modify word',
+          'Edit word',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
@@ -171,39 +128,67 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white54),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () {
               if (wordController.text.isNotEmpty &&
                   translationController.text.isNotEmpty) {
-                setState(() {
-                  words[index] = {
-                    'word': wordController.text,
-                    'translation': translationController.text,
-                    'transcription': transcriptionController.text,
-                    'example': exampleController.text,
-                  };
-                });
+                final updatedWord = Word(
+                  id: word.id,
+                  word: wordController.text,
+                  translation: translationController.text,
+                  transcription: transcriptionController.text.isEmpty
+                      ? null
+                      : transcriptionController.text,
+                  example: exampleController.text.isEmpty
+                      ? null
+                      : exampleController.text,
+                  deckId: word.deckId,
+                  level: word.level,
+                  nextReviewDate: word.nextReviewDate,
+                );
+                context.read<WordCubit>().updateWord(updatedWord);
                 Navigator.pop(context);
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7C6FCD),
             ),
-            child: const Text(
-              'Save',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
+  void _deleteWord(String wordId) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF2a2a3e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete word?',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<WordCubit>().deleteWord(wordId, widget.deckId);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildTextField(TextEditingController controller, String hint) {
     return TextField(
@@ -222,11 +207,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final color = widget.deck['color'] as Color;
-
+    final name = widget.deck['name'] as String;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0FF),
@@ -249,84 +233,91 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.deck['name'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${words.length} слов',
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: words.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No words. Add the first one!',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: words.length,
-                    itemBuilder: (context, index) {
-                      final word = words[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          title: Text(
-                            word['word']!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Text(
-                            word['translation']!,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit_outlined,
-                                  color: Color(0xFF7C6FCD),
-                                ),
-                                onPressed: () => _editWord(index),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () => _deleteWord(index),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+          BlocBuilder<WordCubit, WordState>(
+            builder: (context, state) {
+              if (state is WordLoading) {
+                return const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF5B4DB0)),
                   ),
+                );
+              }
+              if (state is WordError) {
+                return Expanded(
+                  child: Center(child: Text(state.message)),
+                );
+              }
+              if (state is WordLoaded) {
+                final words = state.words;
+                return Expanded(
+                  child: words.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No words yet. Add your first word!',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: words.length,
+                          itemBuilder: (context, index) {
+                            final word = words[index];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                title: Text(
+                                  word.word,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  word.translation,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined,
+                                          color: Color(0xFF7C6FCD)),
+                                      onPressed: () => _showEditWordDialog(word),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline,
+                                          color: Colors.red),
+                                      onPressed: () => _deleteWord(word.id),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                );
+              }
+              return const Expanded(child: SizedBox());
+            },
           ),
         ],
       ),
@@ -334,10 +325,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         onPressed: _showAddWordDialog,
         backgroundColor: color,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Add a word',
-          style: TextStyle(color: Colors.white),
-        ),
+        label: const Text('Add word', style: TextStyle(color: Colors.white)),
       ),
     );
   }

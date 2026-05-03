@@ -4,7 +4,6 @@ import 'package:smart_castle/models/word.dart';
 import 'package:smart_castle/repositories/word_repository.dart';
 import 'package:smart_castle/services/srs_service.dart';
 
-// Состояния
 abstract class WordState extends Equatable {
   @override
   List<Object?> get props => [];
@@ -25,7 +24,6 @@ class WordLoaded extends WordState {
   List<Object?> get props => [words];
 }
 
-// Кубит
 class WordCubit extends Cubit<WordState> {
   final WordRepository _repo;
   WordCubit(this._repo) : super(WordInitial());
