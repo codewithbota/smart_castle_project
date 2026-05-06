@@ -7,6 +7,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final name = user?.userMetadata?['name'] ?? user?.email?.split('@').first ?? 'User';
+    final email = user?.email ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0FF),
       body: Column(
@@ -29,18 +33,18 @@ class ProfileScreen extends StatelessWidget {
                   child: Icon(Icons.person, color: Color(0xFF5B4DB0), size: 40),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'John Doe',
-                  style: TextStyle(
+                Text(
+                  name,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'john.doe@gmail.com',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                Text(
+                  email,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -50,23 +54,7 @@ class ProfileScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _StatItem(value: '520', label: 'Words learnt'),
-                      _StatItem(value: '14', label: 'Days in a row'),
-                      _StatItem(value: '87%', label: 'Accuracy'),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
 
                 _SettingsItem(
                   icon: Icons.notifications_outlined,
@@ -86,7 +74,36 @@ class ProfileScreen extends StatelessWidget {
                 _SettingsItem(
                   icon: Icons.help_outline,
                   title: 'Help',
-                  onTap: () {},
+                 onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: const Text(
+                          'Help',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF5B4DB0),
+                          ),
+                        ),
+                        content: const Text(
+                          'If you have any issues, please contact us at:\n\nbota_nw@icloud.com',
+                          style: TextStyle(fontSize: 15),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(color: Color(0xFF5B4DB0)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 12),
@@ -111,30 +128,6 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String value;
-  final String label;
-  const _StatItem({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF5B4DB0),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-      ],
     );
   }
 }

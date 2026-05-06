@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smart_castle/repositories/deck_repository.dart';
+import 'package:smart_castle/repositories/word_repository.dart';
 import 'package:smart_castle/router/app_router.dart';
 
 void main() async {
@@ -10,7 +13,19 @@ void main() async {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpucHh6eGtua29lbXBqcWlocWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTc4OTMsImV4cCI6MjA5MzI5Mzg5M30.1TYiPsF-oAdxVHfDwa7xn0lObqdVho-7ygQcCDP4yXo',
   );
 
-  runApp(const MyApp());
+  runApp(
+    MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<DeckRepository>(
+          create: (_) => DeckRepository(),
+        ),
+        RepositoryProvider<WordRepository>(
+          create: (_) => WordRepository(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -19,7 +34,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'LearnWithBota',
+      title: 'ByLittle',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

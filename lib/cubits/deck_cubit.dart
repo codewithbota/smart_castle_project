@@ -9,13 +9,17 @@ abstract class DeckState extends Equatable {
 }
 
 class DeckInitial extends DeckState {}
+
 class DeckLoading extends DeckState {}
+
 class DeckError extends DeckState {
   final String message;
-  DeckError(this.message);
+  final List<Deck> previousDecks; 
+  DeckError(this.message, {this.previousDecks = const []});
   @override
   List<Object?> get props => [message];
 }
+
 class DeckLoaded extends DeckState {
   final List<Deck> decks;
   DeckLoaded(this.decks);
@@ -28,12 +32,15 @@ class DeckCubit extends Cubit<DeckState> {
   DeckCubit(this._repo) : super(DeckInitial());
 
   Future<void> loadDecks() async {
-    emit(DeckLoading());
+    if (state is DeckInitial) {
+      emit(DeckLoading());
+    }
     try {
       final decks = await _repo.getDecks();
       emit(DeckLoaded(decks));
     } catch (e) {
-      emit(DeckError(e.toString()));
+      final prev = state is DeckLoaded ? (state as DeckLoaded).decks : <Deck>[];
+      emit(DeckError(e.toString(), previousDecks: prev));
     }
   }
 
@@ -42,7 +49,10 @@ class DeckCubit extends Cubit<DeckState> {
       await _repo.createDeck(name, emoji);
       await loadDecks();
     } catch (e) {
-      emit(DeckError(e.toString()));
+      final prev = state is DeckLoaded ? (state as DeckLoaded).decks : <Deck>[];
+      emit(DeckError(e.toString(), previousDecks: prev));
+      await Future.delayed(const Duration(milliseconds: 500));
+      await loadDecks();
     }
   }
 
@@ -51,7 +61,10 @@ class DeckCubit extends Cubit<DeckState> {
       await _repo.deleteDeck(id);
       await loadDecks();
     } catch (e) {
-      emit(DeckError(e.toString()));
+      final prev = state is DeckLoaded ? (state as DeckLoaded).decks : <Deck>[];
+      emit(DeckError(e.toString(), previousDecks: prev));
+      await Future.delayed(const Duration(milliseconds: 500));
+      await loadDecks();
     }
   }
 }

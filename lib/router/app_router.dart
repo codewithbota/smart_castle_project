@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_castle/cubits/deck_cubit.dart';
+import 'package:smart_castle/repositories/deck_repository.dart';
+import 'package:smart_castle/repositories/word_repository.dart';
 import 'package:smart_castle/views/home/home_screen.dart';
 import 'package:smart_castle/views/learn/learn_screen.dart';
 import 'package:smart_castle/views/words/deck_detail_screen.dart';
@@ -13,15 +17,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
-  
+
   redirect: (context, state) {
-  final session = Supabase.instance.client.auth.currentSession;
-  final isAuthRoute = state.matchedLocation == '/login' ||
-                      state.matchedLocation == '/register';
-  if (session == null && !isAuthRoute) return '/login';
-  if (session != null && isAuthRoute) return '/';
-  return null;
-},
+    final session = Supabase.instance.client.auth.currentSession;
+    final isAuthRoute = state.matchedLocation == '/login' ||
+        state.matchedLocation == '/register';
+    if (session == null && !isAuthRoute) return '/login';
+    if (session != null && isAuthRoute) return '/';
+    return null;
+  },
 
   routes: [
     StatefulShellRoute.indexedStack(
@@ -68,12 +72,12 @@ final appRouter = GoRouter(
         return DeckDetailScreen(deckId: deckId, deck: extra);
       },
     ),
-
     GoRoute(
       path: '/flashcards/:deckId',
       builder: (context, state) {
         final deckId = state.pathParameters['deckId']!;
-        return FlashcardsScreen(deckId: deckId);
+        final extra = state.extra as Map<String, dynamic>?;
+        return FlashcardsScreen(deckId: deckId, extra: extra);
       },
     ),
     GoRoute(
@@ -97,12 +101,30 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => DeckCubit(
+        context.read<DeckRepository>(),
+      )..loadDecks(),
+      child: _NavBarBody(shell: shell),
+    );
+  }
+}
+
+class _NavBarBody extends StatelessWidget {
+  final StatefulNavigationShell shell;
+  const _NavBarBody({required this.shell});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: shell,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: shell.currentIndex,
-        onTap: (index) => shell.goBranch(index),
-        selectedItemColor: Color(0xFF5B4DB0),
+        onTap: (index) {
+          shell.goBranch(index);
+          context.read<DeckCubit>().loadDecks();
+        },
+        selectedItemColor: const Color(0xFF5B4DB0),
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
